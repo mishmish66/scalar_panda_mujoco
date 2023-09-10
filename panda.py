@@ -1,4 +1,5 @@
 import mujoco
+import numpy as np
 
 import os
 
@@ -45,3 +46,5 @@ class Panda:
             )
         self.data.ctrl[:] = action
         mujoco.mj_step(Panda.model, self.data)
+        
+        return np.concatenate([self.data.qpos, self.data.qvel])
