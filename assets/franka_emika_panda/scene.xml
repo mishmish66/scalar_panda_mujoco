@@ -30,31 +30,31 @@
         <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" />
 
         <!-- Red Cube -->
-        <body pos="0.3 0.15 0.75">
+        <body name="red_cube" pos="0.3 0.15 0.05">
             <joint type="free" />
             <geom size="0.03 0.03 0.03" type="box" material="block_red" />
         </body>
 
         <!-- Green Long Rectangular Prism -->
-        <body pos="0.3 -0.15 0.75">
+        <body name="green_long" pos="0.3 -0.15 0.05">
             <joint type="free" />
             <geom size="0.06 0.02 0.02" type="box" material="block_green" />
         </body>
 
         <!-- Yellow Flat Rectangular Prism -->
-        <body pos="0.4 0 0.75">
+        <body name="yellow_flat" pos="0.4 0 0.05">
             <joint type="free" />
             <geom size="0.04 0.04 0.01" type="box" material="block_yellow" />
         </body>
 
         <!-- Purple Ball -->
-        <body pos="0.25 0.2 0.75">
+        <body name="purple_ball" pos="0.25 0.2 0.05">
             <joint type="free" />
             <geom size="0.03" type="sphere" material="block_purple" />
         </body>
 
         <!-- Orange Cylinder -->
-        <body pos="0.25 -0.2 0.75">
+        <body name="orange_cylinder" pos="0.25 -0.2 0.05">
             <joint type="free" />
             <geom size="0.02 0.04" type="cylinder" material="block_orange" />
         </body>
