@@ -17,6 +17,8 @@ class Panda:
             "yellow_flat",
             "purple_ball",
             "orange_cylinder",
+            "blue_sponge",
+            "brown_towel_B4_4",
         ]
 
         # Get the names of the bodies (surprisingly hard)
