@@ -41,14 +41,11 @@ class Panda:
         cls.rev_triu_indices[:] = -1
         cls.rev_triu_indices[cls.triu_indices] = np.arange(len(cls.triu_indices))
 
-        # Give each item an ID
-        cls.body_id_to_item_id = np.empty(len(body_names), dtype=np.int32)
-        cls.body_id_to_item_id[:] = -1
-        cls.body_id_to_item_id[cls.item_body_ids] = np.arange(len(cls.item_body_ids))
-
-        # Which body ids are items
-        cls.body_id_is_item = np.zeros(len(body_names), dtype=bool)
-        cls.body_id_is_item[cls.item_body_ids] = True
+        # Make an array which maps from geom_id to index in item array (item_id)
+        cls.geom_id_to_item_id = np.empty_like(cls.model.geom_bodyid, dtype=np.int32)
+        cls.geom_id_to_item_id[:] = -1
+        for item_id, body_id in np.ndenumerate(cls.item_body_ids):
+            cls.geom_id_to_item_id[cls.model.geom_bodyid == body_id] = item_id
 
     def __init__(self):
         self.renderer = None
@@ -93,31 +90,24 @@ class Panda:
         # Get the contacts relevant to the items
         geom1 = self.data.contact.geom1
         geom2 = self.data.contact.geom2
-        
-        # Convert geom ids to body ids
-        body1 = self.model.geom_bodyid[geom1]
-        body2 = self.model.geom_bodyid[geom2]
 
         # Stack the contact info into one tensor so we only have to index once
-        contact_bodies = np.stack([body1, body2], axis=-1)
+        contact_bodies = np.stack([geom1, geom2], axis=-1)
 
-        # Check which contacts are really taking place between two items
-        relevant_bodies = self.body_id_is_item[contact_bodies]
-        contact_is_relevant = np.logical_and.reduce(relevant_bodies, axis=-1)
-        
-        # Pull out the relevant contacts
-        relevant_contacts = contact_bodies[contact_is_relevant]
-        
-        # Convert body ids in relevant contacts to item ids (We can do this since we know both contacting parties are items)
-        relevant_item_contacts = self.body_id_to_item_id[relevant_contacts]
+        # Convert the geom ids to item ids
+        contact_items = self.geom_id_to_item_id[contact_bodies]
+
+        # Toss out contacts that are not between two items
+        relevant_geoms = contact_items != -1
+        contact_is_relevant = relevant_geoms[:, 0] & relevant_geoms[:, 1]
+        relevant_contacts = contact_items[contact_is_relevant]
 
         # Sort the contacts so that it follows the upper triangular
-        relevant_item_contacts = np.sort(relevant_item_contacts, axis=-1)
+        relevant_contacts = np.sort(relevant_contacts, axis=-1)
 
-        # Convert to the 1d indices in a matrix (row major) (sorting should make it upper triangular)
+        # Convert to the 1d indices in a matrix (row major should make it upper triangular)
         relevant_contact_1d_indices = (
-            relevant_item_contacts[:, 0] * len(self.item_body_ids)
-            + relevant_item_contacts[:, 1]
+            relevant_contacts[:, 0] * len(self.item_body_ids) + relevant_contacts[:, 1]
         )
 
         # Convert to the 1d indices in the upper triangular 1d index list
@@ -127,8 +117,8 @@ class Panda:
         one_hots = np.eye(len(self.triu_indices))[contact_pair_indices]
 
         # And these all together to get rid of redundant contacts and add different contacts together
-        boolean_result = np.logical_and.reduce(one_hots, axis=0)
-        
+        boolean_result = one_hots.any(axis=0)
+
         # Return it as an int since booleans have cooties
         return boolean_result.astype(np.int32)
 
