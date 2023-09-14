@@ -99,21 +99,20 @@ class Panda:
         body2 = self.model.geom_bodyid[geom2]
 
         # Stack the contact info into one tensor so we only have to index once
-        contact_bodies = np.stack([body1, body2], axis=1)
+        contact_bodies = np.stack([body1, body2], axis=-1)
 
         # Check which contacts are really taking place between two items
         relevant_bodies = self.body_id_is_item[contact_bodies]
-        contact_is_relevant = np.logical_and.reduce(relevant_bodies)
+        contact_is_relevant = np.logical_and.reduce(relevant_bodies, axis=-1)
         
-        # Get the indices of the relevant contacts in the contact list and then pull them out
-        relevant_contact_indices = np.argwhere(contact_is_relevant).squeeze()
-        relevant_contacts = contact_bodies[relevant_contact_indices]
+        # Pull out the relevant contacts
+        relevant_contacts = contact_bodies[contact_is_relevant]
         
         # Convert body ids in relevant contacts to item ids (We can do this since we know both contacting parties are items)
         relevant_item_contacts = self.body_id_to_item_id[relevant_contacts]
 
         # Sort the contacts so that it follows the upper triangular
-        relevant_contacts = np.sort(relevant_contacts, axis=1)
+        relevant_item_contacts = np.sort(relevant_item_contacts, axis=-1)
 
         # Convert to the 1d indices in a matrix (row major) (sorting should make it upper triangular)
         relevant_contact_1d_indices = (
