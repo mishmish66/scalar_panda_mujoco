@@ -1,7 +1,9 @@
+import os
+
+os.environ["MUJOCO_GL"] = "egl"
+
 import mujoco
 import numpy as np
-
-import os
 
 module_root = os.path.dirname(__file__)
 panda_xml_path = os.path.join(module_root, "assets/franka_emika_panda/scene.xml")

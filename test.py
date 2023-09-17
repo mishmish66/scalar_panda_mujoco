@@ -18,34 +18,3 @@ for i in range(10000):
 img_as_array = panda_instance.render()
 
 Image.fromarray(img_as_array).save("test.png")
-
-
-# Launch the viewer so we can test contact stuff
-
-m = panda_instance.model
-d = panda_instance.data
-
-with mujoco.viewer.launch_passive(m, d) as viewer:
-    i = 0
-    while viewer.is_running():
-        step_start = time.time()
-
-        # mj_step can be replaced with code that also evaluates
-        # a policy and applies a control signal before stepping the physics.
-        mujoco.mj_step(m, d)
-
-        # Pick up changes to the physics state, apply perturbations, update options from GUI.
-        viewer.sync()
-        
-        if (i % 50 == 0):
-            i = 0
-            print(panda_instance.make_contact_array().tolist())
-            
-        i += 1
-
-        # Rudimentary time keeping, will drift relative to wall clock.
-        time_until_next_step = m.opt.timestep - (time.time() - step_start)
-        if time_until_next_step > 0:
-            time.sleep(time_until_next_step)
-
-pass
