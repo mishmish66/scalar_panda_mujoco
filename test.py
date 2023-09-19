@@ -2,7 +2,6 @@ from panda import Panda
 import numpy as np
 from PIL import Image
 import mujoco
-import mujoco.viewer
 import time
 
 panda_instance = Panda()
@@ -18,3 +17,5 @@ for i in range(10000):
 img_as_array = panda_instance.render()
 
 Image.fromarray(img_as_array).save("test.png")
+
+del panda_instance
