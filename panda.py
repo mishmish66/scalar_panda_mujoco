@@ -13,7 +13,7 @@ class Panda:
     @classmethod
     def init_static_(cls):
         cls.model = mujoco.MjModel.from_xml_path(panda_xml_path)
-        item_names = [
+        cls.item_names = [
             "red_cube",
             "green_long",
             "yellow_flat",
@@ -31,13 +31,15 @@ class Panda:
             body_names.append(this_string)
 
         # Get the body ids of the items
-        cls.item_body_ids = np.array([body_names.index(name) for name in item_names])
+        cls.item_body_ids = np.array(
+            [body_names.index(name) for name in cls.item_names]
+        )
 
         # WILL'S MODIFICATION: just doing what chatgpt told me to
         cls.body_name_to_idx = {name: idx for idx, name in enumerate(body_names)}
 
         # Get the 1d indices of the upper triangle of the contact matrix on a flattened matrix
-        n_items = len(item_names)
+        n_items = len(cls.item_names)
         cls.triu_indices = np.stack(
             np.triu_indices(n_items, k=1),
             1,
@@ -64,31 +66,41 @@ class Panda:
 
         if randomize:
             constraints = {
-            'red_cube': [0.2, 0.4, 0.1, 0.2, 0.05, 0.1],
-            'green_long': [0.2, 0.4, -0.2, -0.1, 0.05, 0.1],
-            'yellow_flat': [0.35, 0.45, -0.1, 0.1, 0.05, 0.1],
-            'purple_ball': [0.2, 0.3, 0.15, 0.25, 0.05, 0.1],
-            'orange_cylinder': [0.2, 0.3, -0.25, -0.15, 0.05, 0.1],
-            'blue_sponge': [0.45, 0.55, 0.15, 0.25, 0.1, 0.2],
-            'brown_towel_B4_4': [0.65, 0.75, -0.1, 0.1, 0.1, 0.2],
+                "red_cube": [0.2, 0.4, 0.1, 0.2, 0.05, 0.1],
+                "green_long": [0.2, 0.4, -0.2, -0.1, 0.05, 0.1],
+                "yellow_flat": [0.35, 0.45, -0.1, 0.1, 0.05, 0.1],
+                "purple_ball": [0.2, 0.3, 0.15, 0.25, 0.05, 0.1],
+                "orange_cylinder": [0.2, 0.3, -0.25, -0.15, 0.05, 0.1],
+                "blue_sponge": [0.45, 0.55, 0.15, 0.25, 0.1, 0.2],
+                "brown_towel_B4_4": [0.65, 0.75, -0.1, 0.1, 0.1, 0.2],
             }
 
-            for object_name, (x_min, x_max, y_min, y_max, z_min, z_max) in constraints.items():
+            for object_name, (
+                x_min,
+                x_max,
+                y_min,
+                y_max,
+                z_min,
+                z_max,
+            ) in constraints.items():
                 idx = self.body_name_to_idx[object_name]
-                random_pos = np.array([
-                    np.random.uniform(x_min, x_max),
-                    np.random.uniform(y_min, y_max),
-                    np.random.uniform(z_min, z_max)
-                ])
+                random_pos = np.array(
+                    [
+                        np.random.uniform(x_min, x_max),
+                        np.random.uniform(y_min, y_max),
+                        np.random.uniform(z_min, z_max),
+                    ]
+                )
                 # self.data.qpos[idx:idx+3] = random_pos  # Assuming the position is stored in qpos[idx:idx+3]
                 try:
-                    self.data.qpos[idx*7:idx*7+3] = random_pos
+                    self.data.qpos[idx * 7 : idx * 7 + 3] = random_pos
                 except:
-                    assert object_name == 'brown_towel_B4_4', "Oops, it's not that blasted towel again!"
-        
-            # Update simulation
-            mujoco.mj_step(self.model, self.data)       
+                    assert (
+                        object_name == "brown_towel_B4_4"
+                    ), "Oops, it's not that blasted towel again!"
 
+            # Update simulation
+            mujoco.mj_step(self.model, self.data)
 
     def render(self, camera="topdown_cam", width=1024, height=1024):
         """Generates a render from the camera.
@@ -156,6 +168,16 @@ class Panda:
 
         # Return it as an int since booleans have cooties
         return boolean_result.astype(np.int32)
+
+    def make_distance_matrix(self):
+        # Get xyz position of each object
+        item_pos = self.data.xpos[self.item_body_ids]
+
+        matrix = np.repeat(item_pos[None, ...], item_pos.shape[0], axis=0)
+        diffs = matrix - item_pos[:, None, :]
+        norm_matrix = np.linalg.norm(diffs, axis=-1)
+
+        return norm_matrix
 
 
 Panda.init_static_()
