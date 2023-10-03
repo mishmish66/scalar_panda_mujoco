@@ -33,7 +33,7 @@ with mujoco.viewer.launch_passive(m, d) as viewer:
         # a policy and applies a control signal before stepping the physics.
         
         panda_instance.step(np.array([0.0, 0.0, 0, 0, 0, 0, 0, 0]))
-        panda_instance.make_distance_matrix()
+        panda_instance.make_reward_space()
 
         # Example modification of a viewer option: toggle contact points every two seconds.
         with viewer.lock():
