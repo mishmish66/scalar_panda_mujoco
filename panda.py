@@ -172,23 +172,44 @@ class Panda:
         # Return it as an int since booleans have cooties
         return boolean_result.astype(np.int32)
 
-    def make_distance_matrix(self, return_vec=False):
+    def make_item_distance_vector(self):
         # Get xyz position of each object
         item_pos = self.data.xpos[self.item_body_ids]
 
-        matrix = np.repeat(item_pos[None, ...], item_pos.shape[0], axis=0)
-        diffs = matrix - item_pos[:, None, :]
+        matrix = np.tile(item_pos[None], item_pos.shape[0])
+        diffs = matrix - matrix.transpose(1, 0, 2)
         norm_matrix = np.linalg.norm(diffs, axis=-1)
+        
+        norm_vector = norm_matrix.flatten()[self.triu_indices]
+        return norm_vector
 
-        if return_vec:
-            # Get the indices of the upper triangle, excluding the diagonal
-            iu = np.triu_indices(item_pos.shape[0], k=1)
-            
-            # Extract the upper triangle elements into a 1-D array
-            norm_vec = norm_matrix[iu]
-            return norm_vec
+    def make_hand_distance_vector(self):
+        # Get xyz position of each object
+        item_pos = self.data.xpos[self.item_body_ids]
 
-        return norm_matrix
+        # Get xyz position of the hand
+        hand_pos = self.data.xpos[self.body_name_to_idx["hand"]]
+
+        # Get hand to item diffs
+        hand_dists = item_pos - hand_pos
+
+        # Get norm squared
+        hand_norms_sq = np.einsum("id,id->i", hand_dists, hand_dists)
+
+        repeat_matrix = np.tile(hand_norms_sq[None], hand_norms_sq.shape[0])
+        hand_norms_matrix = repeat_matrix + repeat_matrix.T
+
+        hand_norms_vector = hand_norms_matrix.flatten()[self.triu_indices]
+        
+        return hand_norms_vector
+    
+    def make_reward_space(self):
+        hand_dists = self.make_hand_distance_vector()
+        item_dists = self.make_item_distance_vector()
+        contact_vector = self.make_contact_array()
+        
+        # You might have to scale these, or otherwise modify the scaling with a log or something
+        return contact_vector - hand_dists - item_dists 
 
 
 Panda.init_static_()
