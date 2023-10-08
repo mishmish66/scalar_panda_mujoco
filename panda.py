@@ -122,7 +122,7 @@ class Panda:
         img = self.renderer.render()
         return img
 
-    def step(self, action):
+    def step(self, action, include_distance_matrix=False):
         # Check the dims of the control and the action
         if action.shape != self.data.ctrl.shape:
             raise ValueError(
@@ -130,8 +130,11 @@ class Panda:
             )
         self.data.ctrl[:] = action
         mujoco.mj_step(Panda.model, self.data)
-
-        return np.concatenate([self.data.qpos, self.data.qvel])
+        ret = np.concatenate([self.data.qpos, self.data.qvel])
+        if include_distance_matrix:
+            distance_vec = self.make_distance_matrix(return_vec=True)
+            ret = np.concatenate([ret, distance_vec])
+        return ret
 
     def make_contact_array(self):
         # Get the contacts relevant to the items
@@ -169,13 +172,21 @@ class Panda:
         # Return it as an int since booleans have cooties
         return boolean_result.astype(np.int32)
 
-    def make_distance_matrix(self):
+    def make_distance_matrix(self, return_vec=False):
         # Get xyz position of each object
         item_pos = self.data.xpos[self.item_body_ids]
 
         matrix = np.repeat(item_pos[None, ...], item_pos.shape[0], axis=0)
         diffs = matrix - item_pos[:, None, :]
         norm_matrix = np.linalg.norm(diffs, axis=-1)
+
+        if return_vec:
+            # Get the indices of the upper triangle, excluding the diagonal
+            iu = np.triu_indices(item_pos.shape[0], k=1)
+            
+            # Extract the upper triangle elements into a 1-D array
+            norm_vec = norm_matrix[iu]
+            return norm_vec
 
         return norm_matrix
 
