@@ -99,8 +99,11 @@ class Panda:
                         object_name == "brown_towel_B4_4"
                     ), "Oops, it's not that blasted towel again!"
 
-            # Update simulation
-            mujoco.mj_step(self.model, self.data)
+        self.data.qpos[0:9] = np.array(
+            [0, 0, 0, -1.57079, 0, 1.57079, -0.7853, 0.04, 0.04]
+        )
+        # Update simulation
+        mujoco.mj_forward(self.model, self.data)
 
     def render(self, camera="topdown_cam", width=1024, height=1024):
         """Generates a render from the camera.
@@ -128,8 +131,11 @@ class Panda:
             raise ValueError(
                 f"Action shape {action.shape} does not match control shape {self.data.ctrl.shape}"
             )
-        self.data.ctrl[:] = action
+
+        self.data.ctrl[:6] += action[:6]
+        self.data.ctrl[6] = action[6]
         mujoco.mj_step(Panda.model, self.data)
+
 
         return np.concatenate([self.data.qpos, self.data.qvel])
 
@@ -176,7 +182,7 @@ class Panda:
         matrix = np.tile(item_pos[None], item_pos.shape[0])
         diffs = matrix - matrix.transpose(1, 0, 2)
         norm_matrix = np.linalg.norm(diffs, axis=-1)
-        
+
         norm_vector = norm_matrix.flatten()[self.triu_indices]
 
         return norm_vector
@@ -186,7 +192,7 @@ class Panda:
         item_pos = self.data.xpos[self.item_body_ids]
 
         # Get xyz position of the hand
-        hand_pos = self.data.xpos[self.body_name_to_idx["hand"]]
+        hand_pos = self.data.xpos[self.body_name_to_idx["ee_ref_container"]]
 
         # Get hand to item diffs
         hand_dists = item_pos - hand_pos
@@ -198,17 +204,16 @@ class Panda:
         hand_norms_matrix = repeat_matrix + repeat_matrix.T
 
         hand_norms_vector = hand_norms_matrix.flatten()[self.triu_indices]
-        
+
         return hand_norms_vector
-    
+
     def make_reward_space(self):
         hand_dists = self.make_hand_distance_vector()
         item_dists = self.make_item_distance_vector()
         contact_vector = self.make_contact_array()
-        
+
         # You might have to scale these, or otherwise modify the scaling with a log or something
-        return contact_vector - hand_dists - item_dists 
-        
+        return contact_vector - hand_dists - item_dists
 
 
 Panda.init_static_()
