@@ -1,6 +1,8 @@
 import os
 
-os.environ["MUJOCO_GL"] = "egl"
+# os.environ["MUJOCO_GL"] = "egl"
+# os.environ["MUJOCO_GL"] = "glfw"
+os.environ["MUJOCO_GL"] = "osmesa"
 
 import mujoco
 import numpy as np
@@ -122,7 +124,7 @@ class Panda:
         img = self.renderer.render()
         return img
 
-    def step(self, action, include_distance_matrix=False):
+    def step(self, action, inc_contact_array=False, inc_item_dists=False, inc_hand_dists=False):
         # Check the dims of the control and the action
         if action.shape != self.data.ctrl.shape:
             raise ValueError(
@@ -131,9 +133,18 @@ class Panda:
         self.data.ctrl[:] = action
         mujoco.mj_step(Panda.model, self.data)
         ret = np.concatenate([self.data.qpos, self.data.qvel])
-        if include_distance_matrix:
-            distance_vec = self.make_distance_matrix(return_vec=True)
-            ret = np.concatenate([ret, distance_vec])
+        # if include_distance_matrix:
+        #     distance_vec = self.make_distance_matrix(return_vec=True)
+        #     ret = np.concatenate([ret, distance_vec])
+        if inc_contact_array:
+            contact_array = self.make_contact_array()
+            ret = np.concatenate([ret, contact_array])
+        if inc_item_dists:
+            item_dists = self.make_item_distance_vector()
+            ret = np.concatenate([ret, item_dists])
+        if inc_hand_dists:
+            hand_dists = self.make_hand_distance_vector()
+            ret = np.concatenate([ret, hand_dists])
         return ret
 
     def make_contact_array(self):
@@ -183,7 +194,7 @@ class Panda:
         norm_vector = norm_matrix.flatten()[self.triu_indices]
         return norm_vector
 
-    def make_hand_distance_vector(self):
+    def make_hand_distance_vector(self, pairwise=False):
         # Get xyz position of each object
         item_pos = self.data.xpos[self.item_body_ids]
 
@@ -194,7 +205,10 @@ class Panda:
         hand_dists = item_pos - hand_pos
 
         # Get norm squared
-        hand_norms_sq = np.einsum("id,id->i", hand_dists, hand_dists)
+        # hand_norms_sq = np.einsum("id,id->i", hand_dists, hand_dists)
+        hand_norms_sq = np.linalg.norm(hand_dists, axis=-1) ** 2
+        if not pairwise:
+            return hand_norms_sq
 
         repeat_matrix = np.tile(hand_norms_sq[None], hand_norms_sq.shape[0])
         hand_norms_matrix = repeat_matrix + repeat_matrix.T
@@ -204,11 +218,12 @@ class Panda:
         return hand_norms_vector
     
     def make_reward_space(self):
-        hand_dists = self.make_hand_distance_vector()
+        hand_dists = self.make_hand_distance_vector(pairwise=True)
         item_dists = self.make_item_distance_vector()
         contact_vector = self.make_contact_array()
         
         # You might have to scale these, or otherwise modify the scaling with a log or something
+        breakpoint()
         return contact_vector - hand_dists - item_dists 
 
 
