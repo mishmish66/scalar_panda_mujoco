@@ -8,6 +8,12 @@
       <material specular="0.5" shininess="0.25" />
       <joint armature="0.1" damping="1" axis="0 0 1" range="-2.8973 2.8973" />
       <general dyntype="none" biastype="affine" ctrlrange="-2.8973 2.8973" forcerange="-87 87" />
+      <default class="ee_pos">
+        <general forcerange="-1000 1000" gainprm="4000" biasprm="0 -4000 -1000" />
+      </default>
+      <default class="ee_rot">
+        <general forcerange="-60 60" gainprm="1000" biasprm="0 -1000 -100" />
+      </default>
       <default class="finger">
         <joint axis="0 1 0" type="slide" range="0 0.04" />
       </default>
@@ -141,7 +147,7 @@
         <body name="link2" quat="1 -1 0 0">
           <inertial mass="0.646926" pos="-0.003141 -0.02872 0.003495"
             fullinertia="0.0079620 2.8110e-2 2.5995e-2 -3.925e-3 1.0254e-2 7.04e-4" />
-          <joint name="joint2" range="-1.7628 1.7628" />
+          <joint name="joint2" range="-1.7628 1.7628" springref="0" springdamper="0.1 2" />
           <geom material="white" mesh="link2" class="visual" />
           <geom mesh="link2_c" class="collision" />
           <body name="link3" pos="0 -0.316 0" quat="1 1 0 0">
@@ -208,6 +214,8 @@
                     <geom mesh="link7_7" material="white" class="visual" />
                     <geom mesh="link7_c" class="collision" />
                     <body name="hand" pos="0 0 0.107" quat="0.9238795 0 0 -0.3826834">
+                      <!-- <body name="hand" pos="0 0 0.107" euler="0 3.14159 -0.785398"> -->
+                      <!-- <body name="hand" pos="0 0 0.107" quat="0 0 1 0"> -->
                       <inertial mass="0.73" pos="-0.01 0 0.03" diaginertia="0.001 0.0025 0.0017" />
                       <geom mesh="hand_0" material="off_white" class="visual" />
                       <geom mesh="hand_1" material="black" class="visual" />
@@ -240,6 +248,9 @@
                         <geom class="fingertip_pad_collision_4" />
                         <geom class="fingertip_pad_collision_5" />
                       </body>
+                      <body name="ee_ref_container" pos="0 0 0.1" euler="0 3.1415926 0">
+                        <site name="ee_site" euler="0 0 0" />
+                      </body>
                     </body>
                   </body>
                 </body>
@@ -250,6 +261,7 @@
       </body>
     </body>
     <camera name="topdown_cam" pos="0.4 0 1.5" euler="0 0 0" />
+    <site name="base_site" pos="0.5545 0 0.5245" />
   </worldbody>
 
   <tendon>
@@ -264,28 +276,24 @@
   </equality>
 
   <actuator>
-    <general class="panda" name="actuator1" joint="joint1" gainprm="4500" biasprm="0 -4500 -450" />
-    <general class="panda" name="actuator2" joint="joint2" gainprm="4500" biasprm="0 -4500 -450"
-      ctrlrange="-1.7628 1.7628" />
-    <general class="panda" name="actuator3" joint="joint3" gainprm="3500" biasprm="0 -3500 -350" />
-    <general class="panda" name="actuator4" joint="joint4" gainprm="3500" biasprm="0 -3500 -350"
-      ctrlrange="-3.0718 -0.0698" />
-    <general class="panda" name="actuator5" joint="joint5" gainprm="2000" biasprm="0 -2000 -200"
-      forcerange="-12 12" />
-    <general class="panda" name="actuator6" joint="joint6" gainprm="2000" biasprm="0 -2000 -200"
-      forcerange="-12 12"
-      ctrlrange="-0.0175 3.7525" />
-    <general class="panda" name="actuator7" joint="joint7" gainprm="2000" biasprm="0 -2000 -200"
-      forcerange="-12 12" />
-    <!-- Remap original ctrlrange (0, 0.04) to (0, 255): 0.04 * 100 / 255 = 0.01568627451 -->
-    <general class="panda" name="actuator8" tendon="split" forcerange="-100 100" ctrlrange="0 255"
+    <general class="ee_rot" name="xr_ee" gear="0 0 0 1 0 0" ctrlrange="-3 3" site="ee_site"
+      refsite="base_site" />
+    <general class="ee_pos" name="yr_ee" gear="0 0 0 0 1 0" ctrlrange="-3 3"
+      site="ee_site"
+      refsite="base_site" />
+    <general class="ee_pos" name="zr_ee" gear="0 0 0 0 0 1" ctrlrange="-3 3" site="ee_site"
+      refsite="base_site" />
+    <general class="ee_pos" name="xp_ee" gear="1 0 0 0 0 0" ctrlrange="-1 0.7" site="ee_site"
+      refsite="base_site" />
+    <general class="ee_pos" name="yp_ee" gear="0 1 0 0 0 0" ctrlrange="-0.7 0.7" site="ee_site"
+      refsite="base_site" />
+    <general class="ee_pos" name="zp_ee" gear="0 0 1 0 0 0" ctrlrange="-0.5245 0.2" site="ee_site"
+      refsite="base_site" />
+    <general class="panda" name="actuator8" tendon="split" forcerange="-100 100"
+      ctrlrange="0
+    255"
       gainprm="0.01568627451 0 0" biasprm="0 -100 -10" />
   </actuator>
-
-  <!-- <keyframe>
-    <key name="home" qpos="0 0 0 -1.57079 0 1.57079 -0.7853 0.04 0.04"
-      ctrl="0 0 0 -1.57079 0 1.57079 -0.7853 255" />
-  </keyframe> -->
 
   <visual>
     <global offwidth="1024" offheight="1024" />

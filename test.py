@@ -19,20 +19,24 @@ panda_instance = Panda()
 
 # Image.fromarray(img_as_array).save("test.png")
 
+panda_instance.reset()
+
 m = panda_instance.model
 d = panda_instance.data
+
 
 with mujoco.viewer.launch_passive(m, d) as viewer:
     
     start = time.time()
     
-    while viewer.is_running() and time.time() - start < 30:
+    # while viewer.is_running() and time.time() - start < 30:
+    while viewer.is_running():
         step_start = time.time()
 
         # mj_step can be replaced with code that also evaluates
         # a policy and applies a control signal before stepping the physics.
         
-        panda_instance.step(np.array([0.0, 0.0, 0, 0, 0, 0, 0, 0]))
+        panda_instance.step(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
         panda_instance.make_reward_space()
 
         # Example modification of a viewer option: toggle contact points every two seconds.
