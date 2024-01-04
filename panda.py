@@ -22,7 +22,7 @@ class Panda:
             "purple_ball",
             "orange_cylinder",
             "blue_sponge",
-            "brown_towel_B4_4",
+            # "brown_towel_B4_4",
         ]
 
         # Get the names of the bodies (surprisingly hard)
@@ -134,8 +134,9 @@ class Panda:
                 f"Action shape {action.shape} does not match control shape {self.data.ctrl.shape}"
             )
 
-        self.data.ctrl[:6] += action[:6]
-        self.data.ctrl[6] = action[6]
+        # self.data.ctrl[:6] += action[:6]
+        # self.data.ctrl[6] = action[6]
+        self.data.ctrl[:] = action
         mujoco.mj_step(Panda.model, self.data)
         ret = np.concatenate([self.data.qpos, self.data.qvel])
         # if include_distance_matrix:
@@ -229,6 +230,29 @@ class Panda:
 
         # You might have to scale these, or otherwise modify the scaling with a log or something
         return contact_vector - hand_dists - item_dists
+
+    def compute_hand_to_point_reward(self, target_pos):
+        """
+        Computes a reward based on the distance of the robot hand to a target position.
+
+        Args:
+            target_pos (np.ndarray): A 3-element array representing the target (x, y, z) position.
+
+        Returns:
+            float: The computed reward.
+        """
+        # Get the current position of the robot hand
+        hand_pos = self.data.xpos[self.body_name_to_idx["ee_ref_container"]]
+
+        # Calculate the Euclidean distance between the hand and the target position
+        distance = np.linalg.norm(hand_pos - target_pos)
+
+        # Compute the reward. This can be a simple inverse of the distance, or any other function
+        # that appropriately represents the desired reward behavior. Here, we use an exponential
+        # decay function as an example.
+        reward = -distance
+
+        return reward
 
 
 Panda.init_static_()
